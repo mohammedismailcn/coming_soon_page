@@ -1,0 +1,238 @@
+:root {
+  color-scheme: dark;
+  --text: rgba(255, 255, 255, 0.88);
+  --muted: rgba(255, 255, 255, 0.72);
+  --line: rgba(255, 255, 255, 0.76);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  display: grid;
+  min-height: 100vh;
+  overflow: hidden;
+  place-items: center;
+  background: #06383f;
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body::after {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5, 54, 59, 0.12), rgba(1, 25, 31, 0.52)),
+    radial-gradient(circle at 58% 20%, rgba(255, 255, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 18% 84%, rgba(0, 86, 94, 0.28), transparent 35%);
+}
+
+#river-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(5, 76, 82, 0.35), rgba(2, 42, 48, 0.52));
+}
+
+.water-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 40, 46, 0.12), transparent 70%);
+  filter: url(#underwater-ripple);
+}
+
+.coming-soon {
+  position: relative;
+  z-index: 1;
+  width: min(74vw, 780px);
+  padding: 4rem 1rem 3rem;
+  text-align: center;
+  filter: url(#underwater-ripple);
+  animation: content-rise 900ms ease-out both, content-sway 7s ease-in-out 900ms infinite;
+}
+
+.logo-mark {
+  position: relative;
+  display: inline-flex;
+  width: clamp(160px, 24vw, 260px);
+  min-height: 86px;
+  margin-bottom: clamp(1.8rem, 4.4vw, 2.7rem);
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.22));
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.logo-mark:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.28));
+}
+
+.logo-mark img {
+  display: block;
+  width: 100%;
+  max-height: 120px;
+  object-fit: contain;
+}
+
+.logo-mark span {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+h1 {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(2.5rem, 6vw, 4.6rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.05;
+  text-transform: uppercase;
+  text-shadow: 0 5px 28px rgba(0, 0, 0, 0.28);
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+h1:hover {
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.divider {
+  width: min(100%, 720px);
+  height: 2px;
+  margin: clamp(1.4rem, 3.2vw, 1.9rem) auto clamp(1.7rem, 4vw, 2.3rem);
+  background: linear-gradient(90deg, transparent, var(--line) 8%, var(--line) 92%, transparent);
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.divider:hover {
+  transform: translateY(-2px);
+  opacity: 0.85;
+}
+
+p {
+  max-width: 36rem;
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: clamp(1rem, 2.2vw, 1.22rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.45;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.26);
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+p:hover {
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.social-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: clamp(2.8rem, 5vw, 4rem);
+  position: relative;
+  z-index: 3;
+}
+
+.social-links a {
+  display: grid;
+  width: 28px;
+  aspect-ratio: 1;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.74);
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.social-links a:hover,
+.social-links a:focus-visible {
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.social-links svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+@keyframes content-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes content-sway {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(0.4px, -1.2px);
+  }
+
+  50% {
+    transform: translate(-0.5px, 0.6px);
+  }
+
+  75% {
+    transform: translate(0.3px, 1px);
+  }
+}
+
+@media (max-width: 620px) {
+  body {
+    overflow: auto;
+  }
+
+  .coming-soon {
+    width: min(92vw, 520px);
+    padding-block: 3.4rem;
+  }
+
+  p {
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .coming-soon,
+  .water-overlay {
+    filter: none !important;
+  }
+}

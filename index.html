@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Properdeal.in | Coming Soon</title>
+    <meta
+      name="description"
+      content="Properdeal.in is coming soon. We are working to give you the best experience."
+    >
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="modulepreload" href="app.js">
+    <link rel="icon" href="assets/favicon.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <filter id="underwater-ripple" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.012 0.018"
+            numOctaves="2"
+            seed="7"
+            result="noise"
+          >
+            <animate
+              attributeName="baseFrequency"
+              dur="14s"
+              values="0.010 0.016;0.016 0.010;0.010 0.016"
+              repeatCount="indefinite"
+            />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="9" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
+
+    <canvas id="river-canvas" aria-hidden="true"></canvas>
+    <div class="water-overlay" aria-hidden="true"></div>
+
+    <main class="coming-soon" aria-label="Properdeal.in coming soon">
+      <div class="logo-mark" aria-label="Properdeal logo">
+        <img src="assets/properdeal-logo.png" alt="Properdeal" width="1081" height="526" decoding="async" fetchpriority="high" onload="this.nextElementSibling.hidden=true" onerror="this.hidden=true">
+        <span aria-hidden="true">PD</span>
+      </div>
+
+      <h1>We're Coming Soon</h1>
+      <div class="divider" aria-hidden="true"></div>
+      <p>We're coming soon! We're working hard to give you the best experience.</p>
+
+      <nav class="social-links" aria-label="Social links">
+        <a href="https://www.facebook.com/" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15.1 8.2h-2V6.9c0-.5.3-.6.6-.6h1.3V4.1L13 4c-2.2 0-3.4 1.3-3.4 3.6v.6H7.8v2.4h1.8V20h3.5v-9.4h1.8l.2-2.4Z"/>
+          </svg>
+        </a>
+        <a href="https://x.com/" aria-label="X">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M13.7 10.6 20.2 3h-1.5L13 9.6 8.5 3H3.2l6.8 9.9L3.2 21h1.5l5.9-7 4.8 7h5.3l-7-10.4Zm-2.1 2.5-.7-1L5.5 4.2h2.3l4.5 6.5.7 1 5.7 8.2h-2.3l-4.8-6.8Z"/>
+          </svg>
+        </a>
+        <a href="https://www.instagram.com/" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7.4 2.8h9.2c2.5 0 4.6 2.1 4.6 4.6v9.2c0 2.5-2.1 4.6-4.6 4.6H7.4a4.6 4.6 0 0 1-4.6-4.6V7.4c0-2.5 2.1-4.6 4.6-4.6Zm0 1.8a2.8 2.8 0 0 0-2.8 2.8v9.2a2.8 2.8 0 0 0 2.8 2.8h9.2a2.8 2.8 0 0 0 2.8-2.8V7.4a2.8 2.8 0 0 0-2.8-2.8H7.4Zm4.6 3a4.4 4.4 0 1 1 0 8.8 4.4 4.4 0 0 1 0-8.8Zm0 1.8a2.6 2.6 0 1 0 0 5.2 2.6 2.6 0 0 0 0-5.2Zm5-2.1a1 1 0 1 1 0 2.1 1 1 0 0 1 0-2.1Z"/>
+          </svg>
+        </a>
+      </nav>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
