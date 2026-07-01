@@ -13,11 +13,17 @@ if (!gl) {
 
 const isMobile = window.innerWidth < 768;
 
-// Mobile gets a lower internal render resolution (upscaled via CSS) to pay
-// for using the same richer shader as desktop without tanking frame rate.
-const baseDpr    = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
-const renderScale = isMobile ? 0.7 : 1;
+// Mobile renders the *exact same shader* as desktop — no visual differences.
+// Performance is managed purely through internal resolution (upscaled via
+// CSS, imperceptible in noisy water) and a frame-rate cap, never by cutting
+// shader features. This keeps the two backgrounds visually identical.
+const baseDpr     = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
+const renderScale = isMobile ? 0.55 : 1;
 const dpr = baseDpr * renderScale;
+
+// Cap mobile to ~30fps (desktop runs uncapped / display refresh rate).
+const frameInterval = isMobile ? 1000 / 30 : 0;
+let lastFrameTime = 0;
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -42,23 +48,18 @@ const vertexShader = `
   void main() { vUv = uv; gl_Position = vec4(position,1.0); }
 `;
 
-// Single shared shader for mobile + desktop. LITE (mobile) skips the
-// normal-map/specular lighting pass and the caustics pass — the two most
-// expensive, least-noticeable-at-a-glance parts — and drops fbm from 3
-// octaves to 2. Everything else (flow warp, color, foam, vignette) is
-// identical so mobile and desktop look like the same background.
+// One shader, byte-for-byte identical on mobile and desktop — same colors,
+// same lighting, same caustics, same foam. No feature branching. Performance
+// on mobile is handled entirely outside this shader (lower internal
+// resolution + frame-rate cap), so what you see is genuinely the same
+// background at both sizes.
 const fragmentShader = `
   precision mediump float;
   varying vec2 vUv;
   uniform float uTime;
   uniform vec2 uResolution;
 
-  ${isMobile ? "#define LITE" : ""}
-  #ifdef LITE
-    #define OCT 2
-  #else
-    #define OCT 3
-  #endif
+  #define OCT 3
 
   float hash(vec2 p) {
     p = fract(p * vec2(123.34, 345.45));
@@ -102,20 +103,18 @@ const fragmentShader = `
     vec3 color = mix(deep, mid, depth);
     color = mix(color, bright, smoothstep(0.58,0.96,braided)*0.36);
 
-    #ifndef LITE
-      float eps=0.012;
-      vec2 hfP = stream*vec2(3.6,1.9)+oS+vec2(2.0,8.0);
-      vec3 norm = normalize(vec3(fbm(hfP-vec2(eps,0.0))-fbm(hfP+vec2(eps,0.0)),
-                                 fbm(hfP-vec2(0.0,eps))-fbm(hfP+vec2(0.0,eps)), 0.28));
-      vec3 lDir = normalize(vec3(0.45,0.62,0.65));
-      float diff = clamp(dot(norm,lDir),0.0,1.0);
-      float spec = pow(clamp(dot(norm,normalize(lDir+vec3(0,0,1))),0.0,1.0),32.0)*0.45;
-      color *= mix(0.78,1.14,diff);
-      color += spec*vec3(0.85,0.97,1.0);
+    float eps=0.012;
+    vec2 hfP = stream*vec2(3.6,1.9)+oS+vec2(2.0,8.0);
+    vec3 norm = normalize(vec3(fbm(hfP-vec2(eps,0.0))-fbm(hfP+vec2(eps,0.0)),
+                               fbm(hfP-vec2(0.0,eps))-fbm(hfP+vec2(0.0,eps)), 0.28));
+    vec3 lDir = normalize(vec3(0.45,0.62,0.65));
+    float diff = clamp(dot(norm,lDir),0.0,1.0);
+    float spec = pow(clamp(dot(norm,normalize(lDir+vec3(0,0,1))),0.0,1.0),32.0)*0.45;
+    color *= mix(0.78,1.14,diff);
+    color += spec*vec3(0.85,0.97,1.0);
 
-      float caust=fbm(stream*vec2(13.0,5.5)+oF*1.5);
-      color += pow(smoothstep(0.56,0.94,caust),2.0)*0.10*vec3(0.6,0.95,1.0);
-    #endif
+    float caust=fbm(stream*vec2(13.0,5.5)+oF*1.5);
+    color += pow(smoothstep(0.56,0.94,caust),2.0)*0.10*vec3(0.6,0.95,1.0);
 
     float foam=smoothstep(0.10,0.0,abs(fbm(stream*vec2(7.5,2.4)+oS*1.1+vec2(0,body*2.2))-0.54));
     color = mix(color,vec3(0.84,0.97,0.96),foam*smoothstep(0.36,0.88,braided)*0.42);
@@ -149,10 +148,14 @@ window.addEventListener("resize", queueResize);
 const clock = new THREE.Clock();
 let raf = 0;
 
-function animate() {
+function animate(now) {
+  raf = requestAnimationFrame(animate);
+
+  if (frameInterval && now - lastFrameTime < frameInterval) return;
+  lastFrameTime = now;
+
   uniforms.uTime.value = clock.getElapsedTime();
   renderer.render(scene, camera);
-  raf = requestAnimationFrame(animate);
 }
 
 document.addEventListener("visibilitychange", () => {
