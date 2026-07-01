@@ -2,16 +2,28 @@ import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.min.j
 
 const canvas = document.querySelector("#river-canvas");
 
-// Check WebGL support
+const isMobile = window.innerWidth < 768;
+
+// Check WebGL support. "high-performance" can fail context creation on some
+// real phone GPUs (budget/integrated chips) even though it works fine in a
+// desktop browser's mobile emulator, which always uses the desktop GPU.
+// "low-power" is the safer, more broadly-supported request on real devices.
+const contextAttribs = {
+  alpha: true,
+  antialias: false,
+  powerPreference: isMobile ? "low-power" : "high-performance",
+  failIfMajorPerformanceCaveat: false
+};
+
 let gl;
-try { gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl"); } catch(e) {}
+try {
+  gl = canvas.getContext("webgl", contextAttribs) || canvas.getContext("experimental-webgl", contextAttribs);
+} catch(e) {}
 if (!gl) {
   // No WebGL — CSS fallback is already visible, nothing to do
   document.documentElement.classList.add("no-webgl");
   throw new Error("WebGL not supported");
 }
-
-const isMobile = window.innerWidth < 768;
 
 // Mobile renders the *exact same shader* as desktop — no visual differences.
 // Performance is managed purely through internal resolution (upscaled via
@@ -29,10 +41,19 @@ const renderer = new THREE.WebGLRenderer({
   canvas,
   alpha: true,
   antialias: false,
-  powerPreference: "high-performance",
+  powerPreference: contextAttribs.powerPreference,
   context: gl
 });
 renderer.setPixelRatio(dpr);
+
+// If the GPU/browser drops the context mid-session (common on mobile under
+// memory pressure), fall back to the CSS background instead of freezing on
+// the last rendered frame.
+canvas.addEventListener("webglcontextlost", (e) => {
+  e.preventDefault();
+  cancelAnimationFrame(raf);
+  document.documentElement.classList.remove("webgl-ready");
+});
 
 const scene    = new THREE.Scene();
 const camera   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);

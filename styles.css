@@ -337,6 +337,10 @@ h1:hover { color:#fff; transform:translateY(-2px); }
   /* Remove SVG distortion from text on mobile — perf */
   .hero-inner   { filter:none; width:min(92vw,480px); }
   .water-overlay{ filter:none; }
+  /* SVG feTurbulence/feDisplacementMap filters render blank on many real
+     mobile browsers when applied to a large fixed element — strip it here
+     so the fallback background actually shows if WebGL fails to start. */
+  .water-css    { filter:none; }
 
   /* Smaller headings on mobile */
   h1            { font-size: clamp(1.5rem, 7.2vw, 2.3rem); }
