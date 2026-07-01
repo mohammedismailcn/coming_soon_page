@@ -334,8 +334,10 @@ h1:hover { color:#fff; transform:translateY(-2px); }
 
 /* ── Mobile ── */
 @media (max-width: 600px) {
-  /* Remove SVG distortion from text on mobile — perf */
-  .hero-inner   { filter:none; width:min(92vw,480px); }
+  /* Keep the underwater ripple filter on mobile too — this is what makes
+     the water flow visually distort over the text, same as desktop.
+     (It was previously stripped here for perf; restored per design ask.) */
+  .hero-inner   { width:min(92vw,480px); }
   .water-overlay{ filter:none; }
   /* SVG feTurbulence/feDisplacementMap filters render blank on many real
      mobile browsers when applied to a large fixed element — strip it here
