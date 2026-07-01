@@ -12,8 +12,12 @@ if (!gl) {
 }
 
 const isMobile = window.innerWidth < 768;
-// Cap DPR: 1 on mobile, 1.5 on desktop
-const dpr = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
+
+// Mobile gets a lower internal render resolution (upscaled via CSS) to pay
+// for using the same richer shader as desktop without tanking frame rate.
+const baseDpr    = Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.5);
+const renderScale = isMobile ? 0.7 : 1;
+const dpr = baseDpr * renderScale;
 
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -28,14 +32,9 @@ const scene    = new THREE.Scene();
 const camera   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 const geometry = new THREE.PlaneGeometry(2, 2);
 
-const MAX_RIPPLES = 6;
-const rippleData  = new Float32Array(MAX_RIPPLES * 4);
-let nextRipple    = 0;
-
 const uniforms = {
   uTime:       { value: 0 },
-  uResolution: { value: new THREE.Vector2(1, 1) },
-  uRipples:    { value: rippleData }
+  uResolution: { value: new THREE.Vector2(1, 1) }
 };
 
 const vertexShader = `
@@ -43,13 +42,23 @@ const vertexShader = `
   void main() { vUv = uv; gl_Position = vec4(position,1.0); }
 `;
 
-// ── Mobile shader: 2-octave fbm, no domain warp, no normals ──
-const mobileFragment = `
+// Single shared shader for mobile + desktop. LITE (mobile) skips the
+// normal-map/specular lighting pass and the caustics pass — the two most
+// expensive, least-noticeable-at-a-glance parts — and drops fbm from 3
+// octaves to 2. Everything else (flow warp, color, foam, vignette) is
+// identical so mobile and desktop look like the same background.
+const fragmentShader = `
   precision mediump float;
   varying vec2 vUv;
   uniform float uTime;
   uniform vec2 uResolution;
-  uniform vec4 uRipples[${MAX_RIPPLES}];
+
+  ${isMobile ? "#define LITE" : ""}
+  #ifdef LITE
+    #define OCT 2
+  #else
+    #define OCT 3
+  #endif
 
   float hash(vec2 p) {
     p = fract(p * vec2(123.34, 345.45));
@@ -64,9 +73,15 @@ const mobileFragment = `
   }
   float fbm(vec2 p) {
     float v=0.0, a=0.5;
-    for(int i=0;i<2;i++){ v+=a*noise(p); p=p*2.1+vec2(3.7,-1.3); a*=0.5; }
+    mat2 rot=mat2(0.8,-0.6,0.6,0.8);
+    for(int i=0;i<OCT;i++){ v+=a*noise(p); p=rot*p*2.05+11.7; a*=0.5; }
     return v;
   }
+  float flowFbm(vec2 p, float t) {
+    vec2 w=vec2(fbm(p*1.3+vec2(0.0,t*0.14)), fbm(p*1.3+vec2(4.8,-t*0.11)));
+    return fbm(p+(w-0.5)*0.8+vec2(t*0.05,0.0));
+  }
+
   void main() {
     float aspect = uResolution.x / max(uResolution.y,1.0);
     vec2 p = vec2((vUv.x-0.5)*aspect, vUv.y-0.5);
@@ -74,111 +89,36 @@ const mobileFragment = `
 
     vec2 rDir = normalize(vec2(0.95,-0.28));
     vec2 stream = vec2(dot(p,rDir), dot(p,vec2(-rDir.y,rDir.x)));
-    stream.y += sin(stream.x*0.6 + t*0.07)*0.1;
-
-    vec2 off = vec2(t*0.08, sin(t*0.06)*0.04);
-    float body    = fbm(stream*vec2(3.5,1.8) + off + vec2(2.0,8.0));
-    float braided = fbm(stream*vec2(7.0,3.8) + off*1.4 + vec2(body*1.6,-2.5));
-    float depth   = smoothstep(0.0,1.0, body*0.72 + braided*0.32);
-
-    vec3 deep  = vec3(0.022,0.30,0.35);
-    vec3 mid   = vec3(0.045,0.55,0.60);
-    vec3 bright= vec3(0.34, 0.82,0.84);
-    vec3 color = mix(deep, mid, depth);
-    color = mix(color, bright, smoothstep(0.58,0.96,braided)*0.34);
-
-    float foam = smoothstep(0.07,0.0, abs(fbm(stream*vec2(7.0,2.2)+off)-0.54));
-    color = mix(color, vec3(0.84,0.97,0.96), foam*smoothstep(0.36,0.88,braided)*0.38);
-
-    for(int i=0;i<${MAX_RIPPLES};i++){
-      vec4 r = uRipples[i];
-      if(r.w<0.5) continue;
-      float age = t - r.z;
-      if(age<0.0||age>2.2) continue;
-      vec2 origin = vec2((r.x-0.5)*aspect, r.y-0.5);
-      float ring = exp(-pow((distance(p,origin)-age*0.55)*12.0,2.0))*(1.0-smoothstep(0.0,2.2,age));
-      color = mix(color, vec3(0.84,0.97,0.96), ring*0.65);
-    }
-
-    float vign = smoothstep(0.9,0.18, distance(vUv,vec2(0.5)));
-    gl_FragColor = vec4(color * mix(0.6,1.0,vign) * vec3(0.82,1.06,1.05), 1.0);
-  }
-`;
-
-// ── Desktop shader: single-warp flowFbm, 3-octave, normals, caustics ──
-const desktopFragment = `
-  precision mediump float;
-  varying vec2 vUv;
-  uniform float uTime;
-  uniform vec2 uResolution;
-  uniform vec4 uRipples[${MAX_RIPPLES}];
-
-  float hash(vec2 p) {
-    p = fract(p * vec2(123.34,345.45));
-    p += dot(p, p+34.345);
-    return fract(p.x*p.y);
-  }
-  float noise(vec2 p) {
-    vec2 i=floor(p), f=fract(p), u=f*f*(3.0-2.0*f);
-    return mix(mix(hash(i),hash(i+vec2(1,0)),u.x),
-               mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),u.x),u.y);
-  }
-  float fbm(vec2 p) {
-    float v=0.0, a=0.5;
-    mat2 rot=mat2(0.8,-0.6,0.6,0.8);
-    for(int i=0;i<3;i++){ v+=a*noise(p); p=rot*p*2.05+11.7; a*=0.5; }
-    return v;
-  }
-  float flowFbm(vec2 p, float t) {
-    vec2 w=vec2(fbm(p*1.3+vec2(0.0,t*0.14)), fbm(p*1.3+vec2(4.8,-t*0.11)));
-    return fbm(p+(w-0.5)*0.8+vec2(t*0.05,0.0));
-  }
-  void main() {
-    float aspect = uResolution.x/max(uResolution.y,1.0);
-    vec2 p = vec2((vUv.x-0.5)*aspect, vUv.y-0.5);
-    float t = uTime;
-
-    vec2 rDir = normalize(vec2(0.95,-0.28));
-    vec2 stream = vec2(dot(p,rDir), dot(p,vec2(-rDir.y,rDir.x)));
-    stream.y += sin(stream.x*0.6+t*0.07)*0.11;
+    stream.y += sin(stream.x*0.6 + t*0.07)*0.11;
     vec2 oS=vec2(t*0.05,sin(t*0.05)*0.04), oF=vec2(t*0.16,cos(t*0.07)*0.03);
 
     float body    = flowFbm(stream*vec2(3.6,1.9)+oS+vec2(2.0,8.0), t);
     float braided = flowFbm(stream*vec2(8.4,4.6)+oF+vec2(body*1.8,-3.0), t*1.3);
     float depth   = smoothstep(0.0,1.0, body*0.75+braided*0.3);
 
-    float eps=0.012;
-    vec2 hfP = stream*vec2(3.6,1.9)+oS+vec2(2.0,8.0);
-    vec3 norm = normalize(vec3(fbm(hfP-vec2(eps,0.0))-fbm(hfP+vec2(eps,0.0)),
-                               fbm(hfP-vec2(0.0,eps))-fbm(hfP+vec2(0.0,eps)), 0.28));
-    vec3 lDir = normalize(vec3(0.45,0.62,0.65));
-    float diff = clamp(dot(norm,lDir),0.0,1.0);
-    float spec = pow(clamp(dot(norm,normalize(lDir+vec3(0,0,1))),0.0,1.0),32.0)*0.45;
-
     vec3 deep  = vec3(0.022,0.30,0.35);
     vec3 mid   = vec3(0.045,0.55,0.60);
     vec3 bright= vec3(0.34, 0.82,0.84);
-    vec3 color = mix(deep,mid,depth);
-    color = mix(color,bright,smoothstep(0.58,0.96,braided)*0.36);
-    color *= mix(0.78,1.14,diff);
-    color += spec*vec3(0.85,0.97,1.0);
+    vec3 color = mix(deep, mid, depth);
+    color = mix(color, bright, smoothstep(0.58,0.96,braided)*0.36);
 
-    float caust=fbm(stream*vec2(13.0,5.5)+oF*1.5);
-    color += pow(smoothstep(0.56,0.94,caust),2.0)*0.10*vec3(0.6,0.95,1.0);
+    #ifndef LITE
+      float eps=0.012;
+      vec2 hfP = stream*vec2(3.6,1.9)+oS+vec2(2.0,8.0);
+      vec3 norm = normalize(vec3(fbm(hfP-vec2(eps,0.0))-fbm(hfP+vec2(eps,0.0)),
+                                 fbm(hfP-vec2(0.0,eps))-fbm(hfP+vec2(0.0,eps)), 0.28));
+      vec3 lDir = normalize(vec3(0.45,0.62,0.65));
+      float diff = clamp(dot(norm,lDir),0.0,1.0);
+      float spec = pow(clamp(dot(norm,normalize(lDir+vec3(0,0,1))),0.0,1.0),32.0)*0.45;
+      color *= mix(0.78,1.14,diff);
+      color += spec*vec3(0.85,0.97,1.0);
+
+      float caust=fbm(stream*vec2(13.0,5.5)+oF*1.5);
+      color += pow(smoothstep(0.56,0.94,caust),2.0)*0.10*vec3(0.6,0.95,1.0);
+    #endif
 
     float foam=smoothstep(0.10,0.0,abs(fbm(stream*vec2(7.5,2.4)+oS*1.1+vec2(0,body*2.2))-0.54));
     color = mix(color,vec3(0.84,0.97,0.96),foam*smoothstep(0.36,0.88,braided)*0.42);
-
-    for(int i=0;i<${MAX_RIPPLES};i++){
-      vec4 r=uRipples[i];
-      if(r.w<0.5) continue;
-      float age=t-r.z;
-      if(age<0.0||age>2.4) continue;
-      vec2 origin=vec2((r.x-0.5)*aspect,r.y-0.5);
-      float ring=exp(-pow((distance(p,origin)-age*0.58)*13.0,2.0))*(1.0-smoothstep(0.0,2.4,age));
-      color+=ring*0.5*vec3(0.72,0.96,1.0);
-      color=mix(color,vec3(0.84,0.97,0.96),ring*0.7);
-    }
 
     float vign=smoothstep(0.9,0.18,distance(vUv,vec2(0.5)));
     gl_FragColor = vec4(color*mix(0.58,1.0,vign)*vec3(0.82,1.06,1.05),1.0);
@@ -188,7 +128,7 @@ const desktopFragment = `
 const material = new THREE.ShaderMaterial({
   uniforms,
   vertexShader,
-  fragmentShader: isMobile ? mobileFragment : desktopFragment
+  fragmentShader
 });
 scene.add(new THREE.Mesh(geometry, material));
 
@@ -204,23 +144,7 @@ function queueResize() {
   resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; resize(); });
 }
 
-function spawnRipple(cx, cy) {
-  const base = nextRipple * 4;
-  rippleData[base]   = cx / window.innerWidth;
-  rippleData[base+1] = 1 - cy / window.innerHeight;
-  rippleData[base+2] = uniforms.uTime.value;
-  rippleData[base+3] = 1;
-  nextRipple = (nextRipple + 1) % MAX_RIPPLES;
-}
-
-function onTap(e) {
-  const pt = e.changedTouches ? e.changedTouches[0] : e;
-  spawnRipple(pt.clientX, pt.clientY);
-}
-
-window.addEventListener("resize",    queueResize);
-window.addEventListener("pointerdown", onTap);
-window.addEventListener("touchstart",  onTap, { passive: true });
+window.addEventListener("resize", queueResize);
 
 const clock = new THREE.Clock();
 let raf = 0;

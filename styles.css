@@ -338,6 +338,11 @@ h1:hover { color:#fff; transform:translateY(-2px); }
   .hero-inner   { filter:none; width:min(92vw,480px); }
   .water-overlay{ filter:none; }
 
+  /* Smaller headings on mobile */
+  h1            { font-size: clamp(1.5rem, 7.2vw, 2.3rem); }
+  .features h2  { font-size: clamp(1.2rem, 5.5vw, 1.7rem); }
+  .notify h2    { font-size: clamp(1.1rem, 5vw, 1.55rem); }
+
   .input-row { flex-direction:column; align-items:stretch; }
   .input-row input,
   .input-row button { width:100%; flex:none; }
