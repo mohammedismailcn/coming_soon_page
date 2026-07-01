@@ -4,38 +4,43 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Properdeal.in | Coming Soon</title>
-    <meta name="description" content="Properdeal.in is coming soon. India's smartest property deal platform.">
+    <meta name="description" content="Properdeal.in — India's smartest property deal platform. Coming soon.">
     <link rel="preconnect" href="https://unpkg.com">
     <link rel="dns-prefetch" href="https://unpkg.com">
-    <link rel="modulepreload" href="app.js">
     <link rel="icon" href="assets/favicon.png" type="image/png">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
 
-    <!-- SVG underwater distortion filter -->
+    <!-- SVG filter for underwater ripple distortion -->
     <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true">
       <defs>
         <filter id="underwater-ripple" x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="7" result="noise">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018"
+            numOctaves="2" seed="7" result="noise">
             <animate attributeName="baseFrequency" dur="14s"
               values="0.010 0.016;0.016 0.010;0.010 0.016" repeatCount="indefinite"/>
           </feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise"
+            scale="7" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
       </defs>
     </svg>
 
-    <!-- Fixed water canvas -->
+    <!-- CSS animated water — always visible, replaced by WebGL when ready -->
+    <div class="water-css" aria-hidden="true"></div>
+
+    <!-- WebGL canvas — fades in once shader is running -->
     <canvas id="river-canvas" aria-hidden="true"></canvas>
     <div class="water-overlay" aria-hidden="true"></div>
 
     <!-- ── HERO ── -->
     <section class="hero" aria-label="Properdeal coming soon">
       <div class="hero-inner">
+
         <div class="logo-mark" aria-label="Properdeal logo">
-          <img src="assets/properdeal-logo.png" alt="Properdeal" width="1081" height="526"
-               decoding="async" fetchpriority="high"
+          <img src="assets/properdeal-logo.png" alt="Properdeal"
+               width="1081" height="526" decoding="async" fetchpriority="high"
                onload="this.nextElementSibling.hidden=true"
                onerror="this.hidden=true">
           <span aria-hidden="true">PD</span>
@@ -43,7 +48,10 @@
 
         <h1>We're Coming Soon</h1>
         <div class="divider" aria-hidden="true"></div>
-        <p class="tagline">India's smartest property deal platform.<br>We're building something worth waiting for.</p>
+        <p class="tagline">
+          India's smartest property deal platform.<br>
+          We're building something worth waiting for.
+        </p>
 
         <nav class="social-links" aria-label="Social links">
           <a href="https://www.facebook.com/" aria-label="Facebook" target="_blank" rel="noopener">
@@ -57,16 +65,19 @@
           </a>
         </nav>
 
-        <button class="scroll-hint" aria-label="Scroll to learn more" onclick="document.querySelector('.features').scrollIntoView({behavior:'smooth'})">
-          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="scroll-hint" aria-label="Scroll to learn more"
+                onclick="document.querySelector('.features').scrollIntoView({behavior:'smooth'})">
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"
+               stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12l7 7 7-7"/>
           </svg>
         </button>
+
       </div>
     </section>
 
     <!-- ── FEATURES ── -->
-    <section class="features" aria-label="What's coming">
+    <section class="features" aria-label="What we're building">
       <div class="section-inner">
         <p class="eyebrow">What we're building</p>
         <h2>Property deals, simplified.</h2>
@@ -87,7 +98,7 @@
               </svg>
             </div>
             <h3>Real-time Prices</h3>
-            <p>Live market data so you know exactly what a fair deal looks like before you negotiate.</p>
+            <p>Live market data so you know what a fair deal looks like before you negotiate.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon" aria-hidden="true">
@@ -96,7 +107,7 @@
               </svg>
             </div>
             <h3>Smart Matching</h3>
-            <p>Tell us what you want. We surface deals that actually match, not just anything nearby.</p>
+            <p>Tell us what you want. We surface deals that actually fit, not just anything nearby.</p>
           </div>
           <div class="feature-card">
             <div class="feature-icon" aria-hidden="true">
@@ -112,15 +123,19 @@
     </section>
 
     <!-- ── NOTIFY ── -->
-    <section class="notify" aria-label="Get notified">
+    <section class="notify" aria-label="Get notified at launch">
       <div class="section-inner section-inner--narrow">
         <p class="eyebrow">Stay in the loop</p>
         <h2>Be first to know when we launch.</h2>
-        <p class="notify-sub">Drop your email. We'll reach out the moment Properdeal.in goes live — no spam, just the one note that matters.</p>
+        <p class="notify-sub">
+          Drop your email. We'll reach out the moment Properdeal.in goes live —
+          no spam, just the one note that matters.
+        </p>
         <form class="notify-form" onsubmit="handleNotify(event)">
           <div class="input-row">
             <label for="notify-email" class="sr-only">Email address</label>
-            <input id="notify-email" type="email" name="email" placeholder="your@email.com" autocomplete="email" required>
+            <input id="notify-email" type="email" name="email"
+                   placeholder="your@email.com" autocomplete="email" required>
             <button type="submit">Notify me</button>
           </div>
           <p class="notify-confirm" id="notify-confirm" aria-live="polite" hidden>
@@ -161,15 +176,17 @@
 
       // Scroll reveal
       const revealEls = document.querySelectorAll('.features, .notify, .feature-card');
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, i) => {
-          if (entry.isIntersecting) {
-            setTimeout(() => entry.target.classList.add('visible'), entry.target.classList.contains('feature-card') ? i * 80 : 0);
-            observer.unobserve(entry.target);
-          }
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const delay = entry.target.classList.contains('feature-card')
+            ? Array.from(document.querySelectorAll('.feature-card')).indexOf(entry.target) * 90
+            : 0;
+          setTimeout(() => entry.target.classList.add('visible'), delay);
+          io.unobserve(entry.target);
         });
-      }, { threshold: 0.12 });
-      revealEls.forEach(el => observer.observe(el));
+      }, { threshold: 0.10 });
+      revealEls.forEach(el => io.observe(el));
     </script>
   </body>
 </html>
