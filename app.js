@@ -75,17 +75,26 @@ const vertexShader = `
 // resolution + frame-rate cap), so what you see is genuinely the same
 // background at both sizes.
 const fragmentShader = `
-  precision mediump float;
+  #ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+  #else
+    precision mediump float;
+  #endif
   varying vec2 vUv;
   uniform float uTime;
   uniform vec2 uResolution;
 
   #define OCT 3
 
+  // Mediump-safe hash: avoids large magic-number multiplies (123.34 etc.)
+  // that break down into blocky/banded artifacts on real mobile GPUs that
+  // actually enforce mediump precision (desktop drivers usually silently
+  // upgrade to highp regardless of the qualifier, which is why this only
+  // shows up on real phones, never in a desktop browser's device emulator).
   float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 345.45));
-    p += dot(p, p + 34.345);
-    return fract(p.x * p.y);
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
   }
   float noise(vec2 p) {
     vec2 i = floor(p), f = fract(p);
