@@ -459,3 +459,16 @@ h1 {
   color: var(--blue);
   transform: scale(1.15) translateY(-2px);
 }
+
+@media (max-width: 860px) {
+  .network-motion {
+    animation: fadeOutMobileNetwork 1.5s ease-in forwards;
+    animation-delay: 4s; /* Wait for entrance animation to finish */
+    pointer-events: none; /* Prevent accidental clicks after fade out */
+  }
+}
+
+@keyframes fadeOutMobileNetwork {
+  0% { opacity: 1; }
+  100% { opacity: 0.05; } /* Leaves a very faint trace, mostly removed */
+}
