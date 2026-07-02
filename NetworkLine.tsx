@@ -42,8 +42,8 @@ function NetworkLineBase({ connection, fromNode, toNode, isVisible, isPulsing, p
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
         className="network-line-glow"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: isVisible ? 1 : 0, opacity: isVisible ? 0.95 : 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isVisible ? 0.95 : 0 }}
         transition={{ duration: CONNECTION_DRAW_SECONDS, ease: "easeInOut" }}
       />
       <motion.path
@@ -54,8 +54,8 @@ function NetworkLineBase({ connection, fromNode, toNode, isVisible, isPulsing, p
         strokeWidth={0.5}
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: isVisible ? 1 : 0, opacity: isVisible ? 1 : 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isVisible ? 1 : 0 }}
         transition={{ duration: CONNECTION_DRAW_SECONDS, ease: "easeInOut" }}
       />
       {isPulsing && isVisible && !reduceMotion && (
