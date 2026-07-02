@@ -52,11 +52,12 @@ function PropertyNetworkIcon({ icon, size }: { icon: PropertyIconType; size: num
     <img 
       src={getIconSrc(icon)} 
       alt={icon} 
+      decoding="async"
+      loading="eager"
       style={{ 
         width: "100%", 
         height: "100%", 
-        objectFit: "contain", 
-        filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.15))" 
+        objectFit: "contain"
       }} 
       className="png-3d-node" 
       draggable={false}
