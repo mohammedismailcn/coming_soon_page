@@ -56,8 +56,8 @@ export const BREAKPOINTS = {
 } as const;
 
 export const NODE_COUNT: Record<BreakpointKey, number> = {
-  mobile: 12,
-  tablet: 18,
+  mobile: 5,
+  tablet: 12,
   desktop: 25,
 };
 
