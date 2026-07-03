@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -16,7 +17,9 @@
     "react-dom": "latest"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.43.0",
     "typescript": "latest",
-    "vite": "latest"
+    "vite": "latest",
+    "wrangler": "^4.107.0"
   }
 }
